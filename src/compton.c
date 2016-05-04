@@ -2365,6 +2365,7 @@ win_determine_mode(session_t *ps, win *w) {
 static void
 calc_opacity(session_t *ps, win *w) {
   opacity_t opacity = OPAQUE;
+  bool been_set = false;
 
   if (w->destroyed || IsViewable != w->a.map_state)
     opacity = 0;
@@ -2373,17 +2374,21 @@ calc_opacity(session_t *ps, win *w) {
     if (OPAQUE == (opacity = w->opacity_prop)
         && OPAQUE == (opacity = w->opacity_prop_client)) {
       opacity = ps->o.wintype_opacity[w->window_type] * OPAQUE;
+      been_set = true;
     }
 
     // Respect inactive_opacity in some cases
     if (ps->o.inactive_opacity && false == w->focused
         && (OPAQUE == opacity || ps->o.inactive_opacity_override)) {
       opacity = ps->o.inactive_opacity;
+      been_set = true;
     }
 
     // Respect active_opacity only when the window is physically focused
-    if (OPAQUE == opacity && ps->o.active_opacity && win_is_focused_real(ps, w))
-      opacity = ps->o.active_opacity;
+    // I think this is the bug b/c I'm using OPAQUE as my sentinel value -
+    // I actually *WANT* MPlayer to be OPAQUE!
+    if (been_set != true && ps->o.active_opacity && win_is_focused_real(ps, w))
+        opacity = ps->o.active_opacity;
   }
 
   w->opacity_tgt = opacity;
